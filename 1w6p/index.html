@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Template Match Example</title>
+	<link href="js_example_style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+	<h2>Template Match Example</h2>
+
+	<div>
+		<div class="control"><button id="tryIt">Try it</button></div>
+		<p class="err" id="errorMessage"></p>
+	</div>
+	<div>
+		<table cellpadding="0" cellspacing="0" width="0" border="0">
+		<tr>
+			<td>
+				<canvas id="imageCanvasInput"></canvas>
+			</td>
+			<td>
+				<p id="wasm-label"> WebAssembly speed is:<span id="wasm-speed"></span></p>
+			</td>	
+		</tr>
+	
+		<tr>
+			<td>
+				<div class="caption">imageCanvasInput <input type="file" id="fileInput" name="file" accept="image/*" /></div>
+			</td>	
+		</tr>
+		
+		<tr>
+			<td>
+				<canvas id="templateCanvasInput1" width=90 height=100></canvas>
+			</td>
+			<td>
+				<canvas id="templateCanvasInput2" width=90 height=100></canvas>
+			</td>
+			<td>
+				<canvas id="templateCanvasInput3" width=90 height=100></canvas>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div class="caption">templateCanvasInput1 <input type="file" id="templateFileInput1" name="file" accept="image/*" /></div>
+			</td>
+			<td>
+				<div class="caption">templateCanvasInput2 <input type="file" id="templateFileInput2" name="file" accept="image/*" /></div>
+			</td>
+			<td>
+				<div class="caption">templateCanvasInput3 <input type="file" id="templateFileInput3" name="file" accept="image/*" /></div>
+			</td>
+		</tr>
+		
+		
+		<tr>
+			<td>
+				<canvas id="templateCanvasInput4" width=90 height=100></canvas>
+			</td>
+			<td>
+				<canvas id="templateCanvasInput5" width=90 height=100></canvas>
+			</td>
+			<td>
+				<canvas id="templateCanvasInput6" width=90 height=100></canvas>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div class="caption">templateCanvasInput4 <input type="file" id="templateFileInput4" name="file" accept="image/*" /></div>
+			</td>
+			<td>
+				<div class="caption">templateCanvasInput5 <input type="file" id="templateFileInput5" name="file" accept="image/*" /></div>
+			</td>
+			<td>
+				<div class="caption">templateCanvasInput6 <input type="file" id="templateFileInput6" name="file" accept="image/*" /></div>
+			</td>
+		</tr>
+		</table>
+	</div>
+	
+	<script src="utils.js" type="text/javascript"></script>
+	
+	<script type="text/javascript">
+		let utils = new Utils('errorMessage');
+		var wasmworker = new Worker ('worker.js');
+		let perfwasm0,perfwasm1;
+		
+		utils.loadImageToCanvas('lena.jpg', 'imageCanvasInput');
+		utils.loadImageToCanvas('lenaFace5.png', 'templateCanvasInput1');
+		utils.loadImageToCanvas('lenaFace2.png', 'templateCanvasInput2');
+		utils.loadImageToCanvas('lenaFace3.png', 'templateCanvasInput3');
+		utils.loadImageToCanvas('lenaFace4.png', 'templateCanvasInput4');
+		utils.loadImageToCanvas('lenaFace1.png', 'templateCanvasInput5');
+		utils.loadImageToCanvas('lenaFace6.png', 'templateCanvasInput6');
+		utils.addFileInputHandler('fileInput', 'canvasInput');
+		
+		let tryIt = document.getElementById('tryIt');
+		tryIt.addEventListener('click', () => {
+			perfwasm0 = performance.now();               //计时t0
+			
+			let canvas0 = document.getElementById('imageCanvasInput');
+			let ctx0 = canvas0.getContext('2d');
+			let canvas1 = document.getElementById('templateCanvasInput1');
+			let ctx1 = canvas1.getContext('2d');
+			let canvas2 = document.getElementById('templateCanvasInput2');
+			let ctx2 = canvas2.getContext('2d');
+			let canvas3 = document.getElementById('templateCanvasInput3');
+			let ctx3 = canvas3.getContext('2d');
+			let canvas4 = document.getElementById('templateCanvasInput4');
+			let ctx4 = canvas4.getContext('2d');
+			let canvas5 = document.getElementById('templateCanvasInput5');
+			let ctx5 = canvas5.getContext('2d');
+			let canvas6 = document.getElementById('templateCanvasInput6');
+			let ctx6 = canvas6.getContext('2d');
+			
+			let message = {data0:ctx0.getImageData(0,0,canvas0.width,canvas0.height),data1:ctx1.getImageData(0,0,canvas1.width,canvas1.height),data2:ctx2.getImageData(0,0,canvas2.width,canvas2.height),data3:ctx3.getImageData(0,0,canvas3.width,canvas3.height),data4:ctx4.getImageData(0,0,canvas4.width,canvas4.height),data5:ctx5.getImageData(0,0,canvas5.width,canvas5.height),data6:ctx6.getImageData(0,0,canvas6.width,canvas6.height)};
+			wasmworker.postMessage(message);
+		});
+
+		wasmworker.onmessage = function (e) {                //调用wasmworker完毕，返回运算时间	  
+		  var c = document.getElementById("imageCanvasInput");
+			var ctx = c.getContext("2d");
+			ctx.strokeStyle = "#ff0000";
+			ctx.lineWidth = 3;
+		  ctx.rect(e.data.point1,e.data.point2,e.data.point3,e.data.point4);
+			ctx.stroke();
+		  perfwasm1 = performance.now();
+		  console.log(`WASM: ${perfwasm1 - perfwasm0}`);
+  		document.getElementById("wasm-speed").innerText = String((perfwasm1 - perfwasm0).toFixed(2)) + " MS";
+		}
+		
+	</script>
+</body>
+</html>
